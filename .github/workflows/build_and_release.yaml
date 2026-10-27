@@ -48,6 +48,8 @@ jobs:
           Compress-Archive -Path portable/* -DestinationPath "Aseprite-$env:ASEPRITE_TAG-Windows-x64.zip"
       - name: Verify packaged executable
         shell: pwsh
+        env:
+          ASEPRITE_TAG: ${{ steps.version.outputs.tag }}
         run: |
           $exe = (Resolve-Path portable/aseprite.exe).Path
           $process = Start-Process -FilePath $exe -ArgumentList '--version' -Wait -PassThru -RedirectStandardOutput version.txt -RedirectStandardError version-error.txt
@@ -55,7 +57,7 @@ jobs:
           Write-Output $version
           Write-Output "Exit code: $($process.ExitCode)"
           if ($process.ExitCode -ne 0) { Get-Content version-error.txt; throw "Executable exited with an error" }
-          if ($version -notmatch 'Aseprite 1[.]3[.]18[.]6') { throw "Unexpected version output" }
+          if ($version -notmatch ('Aseprite ' + [regex]::Escape($env:ASEPRITE_TAG.TrimStart('v')))) { throw "Unexpected version output" }
       - name: Save personal build download
         if: ${{ always() && steps.package.outcome == 'success' }}
         uses: actions/upload-artifact@v7
